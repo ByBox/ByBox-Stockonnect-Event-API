@@ -1,0 +1,70 @@
+FORMAT: 1A
+HOST: http://polls.apiblueprint.org/
+
+# ByBox Stockonnect Event API
+
+## Purpose
+
+This document describes the api that will exist on the customer's domain. 
+Stockonnect will send requests to the api to notify the customer when events have occurred at any of their Stockonnect lockers
+
+## Authentication
+
+In this documentation `BEARER-TOKEN-FROM-AUTHN-API` refers to the token obtained from the [the ByBox Stockonnect Authentication API](http://docs.byboxauthentication.apiary.io/).
+The identity of the `User` making the request is inferred using the `BEARER-TOKEN-FROM-AUTHN-API`.
+
+# Group Events
+
+## /Events/
+
+### POST [POST]
+
+Notifies the customer of a received event from a Stockonnect Locker
+
++ Request (application/json)
+
+    ##### The following defines the body specification for the `POST` request.
+    + `timestamp` (datetime) -- The date and time the `event` occured at the locker
+    + `correlationId` (string) -- The identifer linking multiple events that occurred in the same door open/close session
+    + `user` (string) -- The identifier of the user who performed the action
+    + `door` (string) -- The identifier of the door where the action was performed
+    + `eventType` (enum[string]) - The type of event that occurred
+        + Members
+            + `scannedIn`
+            + `scannedOut`
+    + `barcode` (string, optional) - The barcode that was scanned, if any
+    + `sku` (string, optional) - The identifier of the sku the scanned package was part of, if any
+    + `orderReference` (string, optional) - The order reference that the scanned package was part of, if any
+            
+    + Headers
+
+            Authorization: Bearer BEARER-TOKEN-FROM-AUTHN-API
+
+    + Body
+
+            {
+                "timestamp": "2017-01-21T15:17:53.443+01:00",
+                "correlationId": "1231212",
+                "user": "DJ001",
+                "door": "DOOR-001",
+                "eventType": "scannedIn",
+                "barcode": "1234567789",
+                "sku": "ITEM-001",
+                "orderReference": "ORDER-123123"
+            }
+
++ Response 200 (application/json; charset=utf-8)
+This is returned when the `Event` was accepted
+
+    + Body
+
+
++ Response 401 (application/json; charset=utf-8)
+This is returned when request did not pass authorisation, it will be retried 
+
+    + Body
+
++ Response 409 (application/json; charset=utf-8)
+This is returned when the `Event` was not accepted, it will be retried
+
+    + Body
