@@ -1,17 +1,16 @@
 FORMAT: 1A
 HOST: http://polls.apiblueprint.org/
 
-# ByBox Stockonnect Event API
+# ByBox Konnect Event API
 
 ## Purpose
 
 This document describes the api that will exist on the customer's domain. 
-Stockonnect will send requests to the api to notify the customer when events have occurred at any of their Stockonnect lockers
+Konnect will send requests to the api to notify the customer when events have occurred at any of their Konnect lockers
 
 ## Authentication
 
-In this documentation `BEARER-TOKEN-FROM-AUTHN-API` refers to the token obtained from the [the ByBox Stockonnect Authentication API](http://docs.byboxauthentication.apiary.io/).
-The identity of the `User` making the request is inferred using the `BEARER-TOKEN-FROM-AUTHN-API`.
+we can support posting to apis with Basic HTTP Base64 encoded header authorization
 
 # Group Events
 
@@ -19,38 +18,66 @@ The identity of the `User` making the request is inferred using the `BEARER-TOKE
 
 ### POST [POST]
 
-Notifies the customer of a received event from a Stockonnect Locker
+Notifies the customer of a received event from a Konnect App Box
 
 + Request (application/json)
 
     ##### The following defines the body specification for the `POST` request.
-    + `timestamp` (datetime) -- The date and time the `event` occured at the locker
-    + `correlationId` (string) -- The identifer linking multiple events that occurred in the same door open/close session
-    + `user` (string) -- The identifier of the user who performed the action
-    + `door` (string) -- The identifier of the door where the action was performed
-    + `eventType` (enum[string]) - The type of event that occurred
-        + Members
-            + `scannedIn`
-            + `scannedOut`
-    + `barcode` (string, optional) - The barcode that was scanned, if any
-    + `sku` (string, optional) - The identifier of the sku the scanned package was part of, if any
-    + `orderReference` (string, optional) - The order reference that the scanned package was part of, if any
+    + `EventId` (guid) -- A unique identifier for this event
+    + `EventTime` (datetime) -- The date and time the `event` occured at the locker
+    + `ClientIdentifier` (string) -- The unique identifier of the client
+    + `User` (UserDetails) -- The identifier of the user who performed the action
+    + `Location` (LocationDetails) -- The location where the event took place
+    + `Door` (DoorDetails) -- The door where the event took place
+    + `EventName` (enum[EventType]) -- The type of event that occurred
+    + `ItemDetails` (array[ItemDetails]) -- The details of the items that were scanned in or out 
+    + `Carrier` (CarrierDetails) -- The details of the carrier that scanned the items in
             
     + Headers
 
-            Authorization: Bearer BEARER-TOKEN-FROM-AUTHN-API
+            Authorization: Bearer BEARER-TOKEN
 
     + Body
 
             {
-                "timestamp": "2017-01-21T15:17:53.443+01:00",
-                "correlationId": "1231212",
-                "user": "DJ001",
-                "door": "DOOR-001",
-                "eventType": "scannedIn",
-                "barcode": "1234567789",
-                "sku": "ITEM-001",
-                "orderReference": "ORDER-123123"
+                "eventId": "45a4ac7c-6f20-41de-8f9f-c6f64eb9b9f5"
+                "eventTime": "2018-01-21T15:17:53.443+01:00",
+                "clientIdentifier": "CLIENT-001",
+                "user": {
+                    "userIdentifier": "USER-001",
+                    "userForename": "Bob",
+                    "userSurname": "Jones"
+                },
+                "location": {
+                  "locationIdentifier": "LOCATION-001",
+                  "locationName": "My Location",
+                  "latitude": 1.22,
+                  "longitude": 0.29
+                },
+                "door": {
+                  "doorIdentifier": "DOOR-001",
+                  "doorName": "My Door",
+                  "supportsJobOrders": false,
+                  "suppoersInventoryOrders": true,
+                  "doorSize": "small"
+                },
+                "eventName": "scannedIn",
+                "itemDetails": [
+                    {
+                        "barcode": "123456789",
+                        "orderIdentifier": "ORDER-1234",
+                        "skuIdentifier": "SKU-123"
+                    },
+                    {
+                        "barcode": "987654321",
+                        "orderIdentifier": "ORDER-1234",
+                        "skuIdentifier": "SKU-321"
+                    }
+                ],
+                "carrierDetails": {
+                    "carrierIdentifier": "CAR-123",
+                    "carrierName": "My Carrier"
+                }
             }
 
 + Response 200 (application/json; charset=utf-8)
@@ -68,3 +95,44 @@ This is returned when request did not pass authorisation, it will be retried
 This is returned when the `Event` was not accepted, it will be retried
 
     + Body
+
+# Group Data Structures  
+
+## ItemDetails (object)
+
++ Barcode: `1234567789` (string) -- The barcode that was scanned
++ OrderIdentifier: `ORDER-1234` (string) -- The order that the item is part of, optional
++ SkuIdentifier: `SKU-XYZ` (string) -- The sku the item is assoicated with, optional
+
+## CarrierDetails (object)
+
++ CarrierIdentifier: `CAR-123` (string) -- The unique identifier of the carrier
++ CarrierName: `My Carrier` (string) -- The name of the carrier
+
+## LocationDetails (object)
+
++ LocationIdentifier: `LOC-123` (string) -- The unique identifier of the location
++ LocationName: `My Location` (string) -- The name of the location
++ Latitude: 34.23 (number) - The latitude of the location
++ Longitude: 0.12 (number) - The longitude of the location
+
+## DoorDetails (object)
+
++ DoorIdentifier: `DOOR-123` (string) -- The unique identifier of the door
++ DoorName: `My Door` (string) -- The name of the door
++ SupportsJobOrders: `false` (boolean) -- If the door can contain job orders or not
++ SupportsInventoryOrders: `true` (boolean) -- If the door can contain inventory orders or not
++ DoorSize: `small` (string) -- The size of the door, small|medium|large
+
+## UserDetails (object)
+
++ UserIdentifier: `USER-123` (string) -- The unique identifier of the user
++ UserForename: `Bob` (string) -- The forename of the user
++ UserSurname: `Jones` (string) -- The surname of the user
+
+## EventType (enum[string])
+
++ ScannedIn
++ AdministratorScannedIn
++ ScannedOut
++ AdministratorScannedOut
